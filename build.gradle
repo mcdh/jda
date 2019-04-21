@@ -65,6 +65,8 @@ test {
  useJUnitPlatform()
 }
 
+String mainClass = 'org.mcdh.jda.MainKt'
+
 jar {
  from sourceSets.main.output
  from {
@@ -74,6 +76,7 @@ jar {
  }
  manifest.attributes(
   'Created-By' : 'Matthewacon (Matthew Barichello)',
+  'Main-Class' : mainClass,
   'Build-Timestamp' : new SimpleDateFormat("yyyy-MM-dd'['HH:mm:ss.SSSZ']'").format(new Date()),
   'Build-Revision' : versioning.info.commit,
   'Build-Jdk' : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
@@ -85,7 +88,6 @@ jar {
 String intellijLocation = 'https://download.jetbrains.com/idea/ideaIU-2018.3.6.tar.gz'
 String downloadLocation = "${project.buildDir.getAbsolutePath()}/intellij.tar.gz"
 String extractedLocation = "${buildDir.getAbsolutePath()}/idea_extracted/"
-String mainClass = 'org.mcdh.jda.MainKt'
 
 task getJetbrainsDecompiler {
  doFirst {

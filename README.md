@@ -45,6 +45,11 @@ class Example {
  }
 }
 ```
+#### Command Line
+```sh
+kotlin -cp /path/to/jda-X.X.X.jar [FERNFLOWER OPTIONS] input_directory output_directory
+```
+By default, jda will decompile all files ending in `.class` within the `input_directory` and write the sources to their relative paths in the `output_directory`. Fernflower options may be specified before the input and output directories to control the decompiler behaviour. For a complete list of Fernflower flags, see [the Fernflower mirror](https://github.com/fesh0r/fernflower).
 
 ## License
 This project is licensed under the [M.I.T License](https://github.com/mcdh/jda/blob/master/LICENSE)

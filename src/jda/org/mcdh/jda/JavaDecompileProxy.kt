@@ -1,15 +1,10 @@
 package org.mcdh.jda
 
 import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger
 import java.io.File
 
-import kotlin.text.*
-
-class JavaDecompileProxy {
- private val saver = ResultSaver()
-
- val logger = Logger()
-
+class JavaDecompileProxy constructor(private val options: Map<String, String>, private val saver: ResultSaver = ResultSaver(), private val logger: IFernflowerLogger = Logger()) {
  fun decompile(path: java.lang.String): java.lang.String {
   val target = File(path as String)
   val files = mutableMapOf<String, File>(Pair(path, target))
@@ -48,6 +43,7 @@ class JavaDecompileProxy {
    }
    //Construct options map
    val options = mutableMapOf<String, Any>()
+   options.putAll(this.options)
    //TODO add switch option for line mappings
    if (true) {
     options["bsm"] = "1"

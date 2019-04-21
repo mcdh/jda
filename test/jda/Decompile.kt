@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 // return decompiler.getText(vf).toString() as java.lang.String
 //}
 
-val decompiler = JavaDecompileProxy()
+val decompiler = JavaDecompileProxy(mutableMapOf())
 
 @Test
 fun testDecompilation() {

@@ -35,4 +35,7 @@ hs_err_pid*
 # Gradle
 .gradle/
 
+# Kotlin
+.kotlintest/
+
 libs/

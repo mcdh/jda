@@ -1,8 +1,15 @@
+import java.nio.file.Files
+import java.text.SimpleDateFormat
+
+import org.gradle.internal.xml.XmlTransformer.XmlProviderImpl
+import org.gradle.api.internal.artifacts.configurations.DefaultConfiguration
+
 plugins {
  id 'org.jetbrains.intellij' version '0.4.8'
- id 'org.jetbrains.kotlin.jvm' version '1.3.0'
+ id 'org.jetbrains.kotlin.jvm' version '1.3.30'
  id 'de.undercouch.download' version '3.4.3'
-// id 'gradle-download-task'
+ id 'net.nemerosa.versioning' version '2.6.1'
+ id 'maven-publish'
 }
 
 repositories {
@@ -13,16 +20,28 @@ sourceSets {
  main {
   kotlin.srcDirs = ['src/jda/']
  }
+ test {
+  kotlin.srcDirs = ['test/jda/']
+ }
+}
+
+configurations {
+ shipped
+ libraryCompile
+ compile.extendsFrom(shipped, libraryCompile)
+ testCompile.extendsFrom compile
 }
 
 group 'org.mcdh'
 version '0.0.1'
 
 dependencies {
- compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
- compile 'org.jetbrains.kotlin:kotlin-reflect'
+ libraryCompile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+ libraryCompile 'org.jetbrains.kotlin:kotlin-reflect'
 // compile 'com.jetbrains:ideaIC:2018.3'
- compile fileTree(dir: 'libs/', includes: ['*.jar'])
+ shipped fileTree(dir: 'libs/', includes: ['*.jar'])
+ testCompile 'org.jetbrains.kotlin:kotlin-test'
+ testCompile 'io.kotlintest:kotlintest-runner-junit5:3.3.2'
 }
 
 intellij {
@@ -31,23 +50,44 @@ intellij {
 // pluginName 'dummy'
 }
 
+final String jvmTarget = '1.8'
+
 compileKotlin {
- kotlinOptions.jvmTarget = '1.8'
+ kotlinOptions.jvmTarget = jvmTarget
+}
+
+//TODO finish test implementation
+compileTestKotlin {
+ kotlinOptions.jvmTarget = jvmTarget
+}
+
+test {
+ useJUnitPlatform()
 }
 
 jar {
  from sourceSets.main.output
-// manifest.attributes(
-//  'Main-Class' : 'org.mcdh.jda.MainKt'
-// )
+ from {
+  configurations.shipped.collect() {
+   it.isDirectory() ? it : zipTree(it)
+  }
+ }
+ manifest.attributes(
+  'Created-By' : 'Matthewacon (Matthew Barichello)',
+  'Build-Timestamp' : new SimpleDateFormat("yyyy-MM-dd'['HH:mm:ss.SSSZ']'").format(new Date()),
+  'Build-Revision' : versioning.info.commit,
+  'Build-Jdk' : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+  'Build-OS' : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+ )
+ exclude 'META-INF/**'
 }
 
 String intellijLocation = 'https://download.jetbrains.com/idea/ideaIU-2018.3.6.tar.gz'
 String downloadLocation = "${project.buildDir.getAbsolutePath()}/intellij.tar.gz"
-String extractedLocation = "${buildDir.getAbsolutePath()}/libs/idea_extracted/"
+String extractedLocation = "${buildDir.getAbsolutePath()}/idea_extracted/"
+String mainClass = 'org.mcdh.jda.MainKt'
 
-//task getJetbrainsDecompiler(type: Download) {
-task getJetbrainsDecompiler() {
+task getJetbrainsDecompiler {
  doFirst {
   final File libs = project.file("libs/")
   if (!libs.exists()) {
@@ -76,9 +116,78 @@ task copyJetbrainsDecompiler(type: Copy, dependsOn: getJetbrainsDecompiler) {
  }
  copy {
   //TODO automatically deduce 'idea-IU-183.6156.11' so versions can be changed without causing path misalignment
+//  String ideaName = ""
+//  doFirst {
+//   ideaName = Files
+//    .list(new File(extractedLocation).toPath())
+//    .toArray(new Path[0])[0]
+//    .toString()
+//    .replace('\\'. '/')
+//    .replace(extractedLocation, '')
+//   println ideaName
+//  }
+//  from file("${extractedLocation}/${ideaName}/plugins/java-decompiler/lib/java-decompiler.jar")
   from file("${extractedLocation}/idea-IU-183.6156.11/plugins/java-decompiler/lib/java-decompiler.jar")
   into file("libs/")
  }
 }
 
 compileKotlin.dependsOn(copyJetbrainsDecompiler)
+
+task run(type: Exec, dependsOn: build) {
+ workingDir "${project.getBuildDir()}/libs/"
+ //TODO accept command line arguments ex: -PfilePath=/X/X/X.class
+ // commandLine 'kotlin', '-cp', "${tasks.jar.outputs.files.files.toArray(new File[0])[0].absolutePath}", filePath
+ commandLine 'kotlin', '-cp', "${tasks.jar.outputs.files.files.toArray(new File[0])[0].absolutePath}", mainClass
+ ignoreExitValue true
+}
+
+publishing {
+ publications {
+  jda(MavenPublication) {
+   from components.java
+   //jar task automatically added to publish task
+//   artifact jar
+
+   //POM can only contain dependencies for one artifact
+//   artifact loadedJar
+//   artifact sourceJar
+
+   pom {
+    name = project.name
+    //Set in project
+//    version = project.version
+    //Uses 'name'
+//    artifactId = project.name
+//    groupId = project.group
+    description = 'An adapter API for JetBrains\' Java-Decompiler version of FernFlower, written in Kotlin.'
+    url = 'https://github.com/mcdh/jda'
+    licenses {
+     license {
+      name = 'MIT License'
+      url = 'https://github.com/mcdh/jda/blob/master/LICENSE'
+     }
+    }
+    developers {
+     developer {
+      id = 'Matthewacon'
+      name = 'Matthew Barichello'
+     }
+    }
+    scm {
+     connection = 'scm:git:git@github.com:mcdh/jda.git'
+     url = 'https://github.com/mcdh/jda'
+    }
+   }
+  }
+ }
+
+ repositories {
+  maven {
+   name = 'local'
+   url = "file://${System.properties['user.home']}/.m2/"
+  }
+ }
+}
+
+build.dependsOn('publishToMavenLocal')

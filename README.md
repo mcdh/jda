@@ -24,10 +24,10 @@ dependencies {
 ```
 
 ## Usage
-There is a single entry point in `org.mcdh.jda.JavaDecompileProxy`. To preserve interoperability with Java, `java.lang.String` was preferred over the native Kotlin type.
+There is a single entry point in `org.mcdh.jda.JdaDecompilerContext`. To preserve interoperability with Java, `java.lang.String` was preferred over the native Kotlin type.
 #### Kotlin
 ```kotlin
-import org.mcdh.jda.JavaDecompileProxy
+import org.mcdh.jda.JdaDecompilerContext
 
 fun main(args: Array<String>) {
  val decompiler = JavaDecompileProxy()

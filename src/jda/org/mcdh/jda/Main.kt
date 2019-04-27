@@ -1,10 +1,13 @@
 package org.mcdh.jda
 
+import com.intellij.util.containers.stream
+import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences
 import java.io.File
 import java.nio.file.Files
 import kotlin.streams.toList
 import kotlin.system.exitProcess
 
+//TODO
 fun main(args: Array<String>) {
  val flags = mutableMapOf<String, String>()
  val paths = mutableListOf<String>()
@@ -24,7 +27,7 @@ fun main(args: Array<String>) {
  }
  //Process input files
  val toDecompile = mutableListOf<File>()
- val rootAbsolutePath = sanitize(paths[0])
+ val rootAbsolutePath = sanitizePath(paths[0])
  val root = File(rootAbsolutePath)
  if (root.isDirectory) {
   var additionsMade = true
@@ -38,7 +41,7 @@ fun main(args: Array<String>) {
      val adding: List<File> = Files
       .list(parent.toPath())
       .filter {
-       val path = sanitize(it.toString())
+       val path = sanitizePath(it.toString())
        path.endsWith(".class")
         && !path.substring(path.lastIndexOf("/")).contains("\$")
       }
@@ -55,7 +58,7 @@ fun main(args: Array<String>) {
   toDecompile.add(root)
  }
  //Decompile
- val decompiler = JavaDecompileProxy(flags)
+ val decompiler = JdaDecompilerContext(flags)
  val outputPath = paths[1]
  val output = File(outputPath)
  if (output.exists()) {
@@ -66,14 +69,44 @@ fun main(args: Array<String>) {
 //  .parallelStream()
   .stream()
   .forEach {
-   val absolutePath = sanitize(it.absolutePath)
-   Files.write(
-    File(absolutePath.replace(rootAbsolutePath, "")).toPath(),
-    decompiler.decompile(absolutePath as java.lang.String).bytes
-   )
+   val absolutePath = sanitizePath(it.absolutePath)
+   val toOutputTo = absolutePath.replace(rootAbsolutePath, "")
+   println("OUTPUTTING TO $toOutputTo")
+   println(decompiler.decompile(absolutePath))
+   //TODO Fix output writing
+//   Files.write(
+//    File(toOutputTo).toPath(),
+//    decompiler.decompile(absolutePath).toByteArray()
+//   )
   }
 }
 
-fun sanitize(input: String): String {
+fun sanitizePath(input: String): String {
  return input.replace('\\', '/')
+}
+
+fun fernflowerDefaultOptions(): Map<String, Any> {
+//  val optionsMap: Map<String, Any> = mutableMapOf()
+ val optionsMap = mutableMapOf<String, Any>()
+ IFernflowerPreferences.DEFAULTS.forEach { (k: String, v: Any) ->
+  optionsMap[k] = v
+ }
+ return optionsMap
+}
+
+fun findSubclasses(clazz: File): Map<String, File> {
+ val mask = clazz.nameWithoutExtension + '$'
+ val innerClasses = mutableMapOf(Pair(sanitizePath(clazz.absolutePath), clazz))
+ clazz
+  .listFiles()
+  .stream()
+  .filter {
+   !it.isDirectory
+    && it.nameWithoutExtension.startsWith(mask, false)
+    && it.extension.equals("class", true)
+  }
+  .forEach {
+   innerClasses[sanitizePath(it.absolutePath.toString())] = it
+  }
+ return innerClasses
 }

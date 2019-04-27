@@ -1,3 +1,9 @@
+buildscript {
+ dependencies {
+  classpath gradleApi()
+ }
+}
+
 import java.nio.file.Files
 import java.text.SimpleDateFormat
 
@@ -33,13 +39,14 @@ configurations {
 }
 
 group 'org.mcdh'
-version '0.0.1'
+version '0.0.2'
 
 dependencies {
  libraryCompile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
  libraryCompile 'org.jetbrains.kotlin:kotlin-reflect'
 // compile 'com.jetbrains:ideaIC:2018.3'
  shipped fileTree(dir: 'libs/', includes: ['*.jar'])
+ shipped 'com.github.stephenc.high-scale-lib:high-scale-lib:1.1.4'
  testCompile 'org.jetbrains.kotlin:kotlin-test'
  testCompile 'io.kotlintest:kotlintest-runner-junit5:3.3.2'
 }

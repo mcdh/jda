@@ -1,5 +1,5 @@
 import org.junit.Test
-import org.mcdh.jda.JavaDecompileProxy
+import org.mcdh.jda.JdaDecompilerContext
 import kotlin.test.assertEquals
 
 //var decompiler: IdeaDecompiler = IdeaDecompiler()
@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 // return decompiler.getText(vf).toString() as java.lang.String
 //}
 
-val decompiler = JavaDecompileProxy(mutableMapOf())
+val decompiler = JdaDecompilerContext(mutableMapOf())
 
 @Test
 fun testDecompilation() {

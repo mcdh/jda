@@ -105,6 +105,7 @@ task getJetbrainsDecompiler {
    dest downloadLocation
    overwrite false
   }
+  println "Extracting Intellij Idea..."
   copy {
    from tarTree(downloadLocation)
    into extractedLocation
@@ -112,12 +113,22 @@ task getJetbrainsDecompiler {
  }
 }
 
-task copyJetbrainsDecompiler(type: Copy, dependsOn: getJetbrainsDecompiler) {
+//task copyJetbrainsDecompiler(type: Copy, dependsOn: getJetbrainsDecompiler) {
+task copyJetbrainsDecompiler(dependsOn: getJetbrainsDecompiler) {
  onlyIf {
   !project.file('libs/java-decompiler.jar').exists()
  }
- copy {
-  //TODO automatically deduce 'idea-IU-183.6156.11' so versions can be changed without causing path misalignment
+ doLast {
+  //Check that the tarball was properly extracted
+  if (!project.file(extractedLocation).exists()) {
+   println "Extracting Intellij Idea..."
+   copy {
+    from tarTree(downloadLocation)
+    into extractedLocation
+   }
+  }
+  copy {
+   //TODO automatically deduce 'idea-IU-183.6156.11' so versions can be changed without causing path misalignment
 //  String ideaName = ""
 //  doFirst {
 //   ideaName = Files
@@ -129,8 +140,9 @@ task copyJetbrainsDecompiler(type: Copy, dependsOn: getJetbrainsDecompiler) {
 //   println ideaName
 //  }
 //  from file("${extractedLocation}/${ideaName}/plugins/java-decompiler/lib/java-decompiler.jar")
-  from file("${extractedLocation}/idea-IU-183.6156.11/plugins/java-decompiler/lib/java-decompiler.jar")
-  into file("libs/")
+   from file("${extractedLocation}/idea-IU-183.6156.11/plugins/java-decompiler/lib/java-decompiler.jar")
+   into file("libs/")
+  }
  }
 }
 

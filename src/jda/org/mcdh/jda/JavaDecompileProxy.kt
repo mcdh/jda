@@ -5,9 +5,9 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger
 import java.io.File
 
 class JavaDecompileProxy constructor(private val options: Map<String, String>, private val saver: ResultSaver = ResultSaver(), private val logger: IFernflowerLogger = Logger()) {
- fun decompile(path: java.lang.String): java.lang.String {
-  val target = File(path as String)
-  val files = mutableMapOf<String, File>(Pair(path, target))
+ fun decompile(path: String): String {
+  val target = File(path)
+  val files = mutableMapOf(Pair(path, target))
   val mask = target.nameWithoutExtension + '$'
   try {
    val parent = target.parentFile
@@ -62,6 +62,6 @@ class JavaDecompileProxy constructor(private val options: Map<String, String>, p
   } catch(t: Throwable) {
    throw t
   }
-  return saver.getResult() as java.lang.String
+  return saver.getResult()
  }
 }

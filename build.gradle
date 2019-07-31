@@ -38,6 +38,7 @@ version '0.0.1'
 dependencies {
  libraryCompile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
  libraryCompile 'org.jetbrains.kotlin:kotlin-reflect'
+// libraryCompile 'com.github.stephenc.high-scale-lib:high-scale-lib:1.1.4'
 // compile 'com.jetbrains:ideaIC:2018.3'
  shipped fileTree(dir: 'libs/', includes: ['*.jar'])
  testCompile 'org.jetbrains.kotlin:kotlin-test'
@@ -83,6 +84,7 @@ jar {
   'Build-OS' : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
  )
  exclude 'META-INF/**'
+ exclude 'messages/**'
 }
 
 String intellijLocation = 'https://download.jetbrains.com/idea/ideaIU-2018.3.6.tar.gz'

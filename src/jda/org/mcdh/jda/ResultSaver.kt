@@ -22,14 +22,8 @@ class ResultSaver: IResultSaver {
  override fun saveDirEntry(p0: String?, p1: String?, p2: String?) { /* unimplemented */ }
 
  override fun saveClassFile(path: String, qualifiedName: String, entryName: String, content: String, mapping: IntArray) {
-//  this.result = content
-//  this.mapping = mapping
-  if (this.result.isEmpty()) {
-   this.result = content
-   this.mapping = mapping
-  } else {
-   //TODO log when a secondary entry is mapped
-  }
+  this.result = content
+  this.mapping = mapping
  }
 
  fun getResult(): String {

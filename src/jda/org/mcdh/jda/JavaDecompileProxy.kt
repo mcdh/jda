@@ -4,11 +4,19 @@ import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger
 import java.io.File
 
-class JavaDecompileProxy constructor(private val options: Map<String, String>, private val saver: ResultSaver = ResultSaver(), private val logger: IFernflowerLogger = Logger()) {
+class JavaDecompileProxy @JvmOverloads constructor(
+ private val options: Map<String, String>,
+ private val classpath: List<String> = listOf(),
+ private val saver: ResultSaver = ResultSaver(),
+ private val logger: IFernflowerLogger = Logger()
+) {
+ init {
+  println("Current options: $options")
+ }
+
  fun decompile(path: String): String {
   val target = File(path)
-  val files = mutableMapOf(Pair(path, target))
-  val mask = target.nameWithoutExtension + '$'
+  val files = mutableMapOf(Pair(sanitize(path), target))
   try {
    val parent = target.parentFile
    var children = mutableListOf<File>(parent)
@@ -33,9 +41,8 @@ class JavaDecompileProxy constructor(private val options: Map<String, String>, p
    }
    children = children.filter {
     !it.isDirectory
-//     && it.nameWithoutExtension.startsWith(mask, 2, false)
-     && it.nameWithoutExtension.startsWith(mask, false)
-     && it.extension.equals(".class", true)
+     && it.nameWithoutExtension.startsWith(target.nameWithoutExtension + '$', false)
+     && it.extension.equals("class", true)
    } as MutableList<File>
    //Assemble files map
    children.forEach {
@@ -52,9 +59,13 @@ class JavaDecompileProxy constructor(private val options: Map<String, String>, p
    }
    //Decompilation
    val provider = BytecodeProvider(files)
-   //moved to global declaration
-//   val saver = ResultSaver()
    val decompiler = BaseDecompiler(provider, saver, options, logger)
+   classpath.forEach {
+    val file = File(it)
+    if (file.exists() && file.extension.equals("class") || file.extension.equals("jar")) {
+     decompiler.addLibrary(file)
+    }
+   }
    files.keys.forEach {
     decompiler.addSource(File(it))
    }

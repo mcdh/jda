@@ -24,14 +24,17 @@ dependencies {
 ```
 
 ## Usage
-There is a single entry point in `org.mcdh.jda.JavaDecompileProxy`. To preserve interoperability with Java, `java.lang.String` was preferred over the native Kotlin type.
+There is a single entry point in `org.mcdh.jda.JavaDecompileProxy`.
 #### Kotlin
 ```kotlin
 import org.mcdh.jda.JavaDecompileProxy
 
 fun main(args: Array<String>) {
- val decompiler = JavaDecompileProxy()
- val decompiled: String = decompiler.decompile("/path/to/clazz.class" as java.lang.String) as String
+ val options = mutableMapOf<String, String>()
+ //Example option: `-dgs=1` forces Fernflower to decompile generic structures
+ options["dgs"] = "1"
+ val decompiler = JavaDecompileProxy(options)
+ val decompiled = decompiler.decompile("/path/to/clazz.class")
 }
 ```
 #### Java
@@ -40,8 +43,10 @@ import org.mcdh.jda.JavaDecompileProxyKt;
 
 class Example {
  public static void main(String[] args) {
-  final JavaDecompileProxyKt decompiler = new JavaDecompileProxyKt();
-  decompiler.decompile("/path/to/clazz.class");
+  final Map<String, String> options = new HashMap<>();
+  options.put("dgs", "1");
+  final JavaDecompileProxy decompiler = new JavaDecompileProxy(options);
+  final String result = decompiler.decompile("/path/to/clazz.class");
  }
 }
 ```

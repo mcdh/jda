@@ -46,7 +46,7 @@ dependencies {
 }
 
 intellij {
- version 'IC-2018.3'
+ version 'IC-2019.2'
 // plugins 'coverage'
 // pluginName 'dummy'
 }
@@ -87,7 +87,7 @@ jar {
  exclude 'messages/**'
 }
 
-String intellijLocation = 'https://download.jetbrains.com/idea/ideaIU-2018.3.6.tar.gz'
+String intellijLocation = 'https://download-cf.jetbrains.com/idea/ideaIU-2019.2.4.tar.gz'
 String downloadLocation = "${project.buildDir.getAbsolutePath()}/intellij.tar.gz"
 String extractedLocation = "${buildDir.getAbsolutePath()}/idea_extracted/"
 
@@ -142,7 +142,7 @@ task copyJetbrainsDecompiler(dependsOn: getJetbrainsDecompiler) {
 //   println ideaName
 //  }
 //  from file("${extractedLocation}/${ideaName}/plugins/java-decompiler/lib/java-decompiler.jar")
-   from file("${extractedLocation}/idea-IU-183.6156.11/plugins/java-decompiler/lib/java-decompiler.jar")
+   from file("${extractedLocation}/idea-IU-192.7142.36/plugins/java-decompiler/lib/java-decompiler.jar")
    into file("libs/")
   }
  }

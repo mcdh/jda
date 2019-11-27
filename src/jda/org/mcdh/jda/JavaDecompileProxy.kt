@@ -1,78 +1,67 @@
 package org.mcdh.jda
 
-import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger
-import java.io.File
+import java.security.ProtectionDomain
 
 class JavaDecompileProxy @JvmOverloads constructor(
- private val options: Map<String, String>,
- private val classpath: List<String> = listOf(),
- private val saver: ResultSaver = ResultSaver(),
- private val logger: IFernflowerLogger = Logger()
+ val options: Map<String, String> = mapOf(),
+ val classpath: List<String> = listOf(),
+ val saver: ResultSaver = ResultSaver(),
+ val logger: IFernflowerLogger = Logger()
 ) {
- init {
-  println("Current options: $options")
+
+ private class FFClassLoader constructor(private val proxy: JavaDecompileProxy): ClassLoader() {
+  companion object {
+   private val mdefineClass0 = ClassLoader::class.java.getDeclaredMethod(
+    "defineClass0",
+    String::class.java,
+    ByteArray::class.java,
+    Int::class.java,
+    Int::class.java,
+    ProtectionDomain::class.java
+   )
+
+   private val classCache = mutableMapOf<String, ByteArray>()
+
+   init {
+    mdefineClass0.isAccessible = true
+   }
+  }
+
+  private val currentThread: Thread = Thread.currentThread()
+  private val scl: ClassLoader
+  val decompiler: Decompiler
+
+  init {
+   this.scl = currentThread.contextClassLoader
+   currentThread.contextClassLoader = this
+   this.decompiler = Decompiler(proxy)
+  }
+
+  fun close() {
+   currentThread.contextClassLoader = scl
+  }
+
+  override fun loadClass(name: String): Class<*> {
+   val normalizedName = name.toLowerCase()
+   val path = "${name.replace(".", "/")}.class"
+//   if (normalizedName.contains("org.mcdh") || normalizedName.contains("org.jetbrains.java.decompiler")) {
+   if (normalizedName.contains("org.jetbrains")) {
+    val data = classCache[name] ?: super.getResourceAsStream(path)!!.readBytes()
+    classCache[name] = data
+    return mdefineClass0.invoke(this, name, data, 0, data.size, null) as Class<*>
+   }
+   return scl.loadClass(name)
+  }
  }
 
  fun decompile(path: String): String {
-  val target = File(path)
-  val files = mutableMapOf(Pair(sanitize(path), target))
-  try {
-   val parent = target.parentFile
-   var children = mutableListOf<File>(parent)
-   var childAdded = true
-   //Get all files in directory
-   while(childAdded) {
-    childAdded = false
-    val toAdd = mutableListOf<File>()
-    val toRemove = mutableListOf<File>()
-    for(file in children) {
-     if (file.isDirectory) {
-      toRemove.add(file)
-      val files = file.listFiles()
-      if (files.isNotEmpty()) {
-       childAdded = true
-       toAdd.addAll(files)
-      }
-     }
-    }
-    children.removeAll(toRemove)
-    children.addAll(toAdd)
-   }
-   children = children.filter {
-    !it.isDirectory
-     && it.nameWithoutExtension.startsWith(target.nameWithoutExtension + '$', false)
-     && it.extension.equals("class", true)
-   } as MutableList<File>
-   //Assemble files map
-   children.forEach {
-    files[it.absolutePath] = it
-   }
-   //Construct options map
-   val options = mutableMapOf<String, Any>()
-   options.putAll(this.options)
-   //TODO add switch option for line mappings
-   if (true) {
-    options["bsm"] = "1"
-   } else {
-    options["__dump_original_lines__"] = "1"
-   }
-   //Decompilation
-   val provider = BytecodeProvider(files)
-   val decompiler = BaseDecompiler(provider, saver, options, logger)
-   classpath.forEach {
-    val file = File(it)
-    if (file.exists() && file.extension.equals("class") || file.extension.equals("jar")) {
-     decompiler.addLibrary(file)
-    }
-   }
-   files.keys.forEach {
-    decompiler.addSource(File(it))
-   }
-   decompiler.decompileContext()
-  } catch(t: Throwable) {
-   throw t
+  if (Thread.currentThread().javaClass == FFClassLoader::class.java) {
+   throw RuntimeException("Deadlock detected in decompiler!")
   }
-  return saver.getResult()
+  val loader = FFClassLoader(this)
+  val ret = loader.decompiler.decompile(path)
+  loader.close()
+  return ret
  }
 }

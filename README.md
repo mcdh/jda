@@ -1,5 +1,5 @@
 # jda
-An adapter API for JetBrains' Java-Decompiler version of FernFlower, written in Kotlin. 
+An adapter API for JetBrains' Java-Decompiler version of FernFlower, written in Kotlin. On top of all the features availabe in stock FernFlower, jda provides support for parallel decompilation through a thread-safe wrapper.
 
 ## Building
 The artifact cannot legally be distributed, therefore you must build the application locally in order to use it. To build the application and produce a system-wide copy that can be used in other projects, run the following commands:

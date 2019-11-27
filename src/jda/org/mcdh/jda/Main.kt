@@ -2,63 +2,8 @@ package org.mcdh.jda
 
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import kotlin.system.exitProcess
-
-//class Main constructor(private val options: Map<String, String>) {
-// private class BadFix(flags: Map<String, String>): ClassLoader() {
-//  companion object {
-//   private val mdefineClass0 = ClassLoader::class.java.getDeclaredMethod(
-//    "defineClass0",
-//    String::class.java,
-//    ByteArray::class.java,
-//    Int::class.java,
-//    Int::class.java,
-//    ProtectionDomain::class.java
-//   )
-//
-//   private val classCache = mutableMapOf<String, ByteArray>()
-//
-//   init {
-//    mdefineClass0.isAccessible = true
-//   }
-//  }
-//
-//  private val currentThread: Thread = Thread.currentThread()
-//  private val scl: ClassLoader
-//  val decompileProxy: JavaDecompileProxy
-//
-//  init {
-//   this.scl = currentThread.contextClassLoader
-//   currentThread.contextClassLoader = this
-//   this.decompileProxy = JavaDecompileProxy(flags)
-////   val clazz = loadClass("org.mcdh.jda.JavaDecompileProxy") as Class<JavaDecompileProxy>
-////   decompileProxy = clazz.constructors.iterator().next().newInstance(flags)!! as JavaDecompileProxy
-//  }
-//
-//  fun close() {
-//   currentThread.contextClassLoader = scl
-//  }
-//
-//  override fun loadClass(name: String): Class<*> {
-//   val normalizedName = name.toLowerCase()
-//   val path = "${name.replace(".", "/")}.class"
-////   if (normalizedName.contains("org.mcdh") || normalizedName.contains("org.jetbrains.java.decompiler")) {
-//   if (normalizedName.contains("org.jetbrains")) {
-//    val data = classCache[name] ?: super.getResourceAsStream(path)!!.readBytes()
-//    classCache[name] = data
-//    return mdefineClass0.invoke(this, name, data, 0, data.size, null) as Class<*>
-//   }
-//   return scl.loadClass(name)
-//  }
-// }
-//
-// fun decompile(path: String): String {
-//  val badFix = BadFix(options)
-//  val ret = badFix.decompileProxy.decompile(path)
-//  badFix.close()
-//  return ret
-// }
-//}
 
 fun main(args: Array<String>) {
  val flags = mutableMapOf<String, String>()
@@ -77,9 +22,7 @@ fun main(args: Array<String>) {
   println("You must specify an input and output directory.")
   exitProcess(255)
  }
-// val main = Main(flags)
  //Process input files
-// val toDecompile = mutableListOf<String>()
  val toDecompile = mutableSetOf<String>()
  val rootAbsolutePath = File(sanitize(paths[0])).absolutePath
  var additionsMade = true
@@ -93,7 +36,7 @@ fun main(args: Array<String>) {
    val f = File(sp)
    if (f.isDirectory) {
     additionsMade = true
-    f.list().forEach {
+    f.list()!!.forEach {
 //     toAdd.add("$rootAbsolutePath/$it")
      toAdd.add("$sp/$it")
     }
@@ -112,18 +55,17 @@ fun main(args: Array<String>) {
   toDecompile.addAll(toAdd)
  }
  //Decompile
- //NOTE: Reusing the same decompiler instance for multiple classes causes strange behaviour that results in inner
- //classes not being fully decompiled and generic signatures disappearing from the resulting source
-// val decompiler = JavaDecompileProxy(flags)
+ val decompiler = JavaDecompileProxy(flags)
  val outputPath = sanitize(paths[1])
  val output = File(outputPath)
  if (output.exists()) {
   output.delete()
  }
  output.mkdirs()
+// val start = System.currentTimeMillis()
+ //TODO fix path matching for output
  toDecompile
-//  .parallelStream()
-  .stream()
+  .parallelStream()
   .forEach {
    val rootParentPath = rootAbsolutePath.replaceAfterLast("/", "")
    val sourcePath = it
@@ -140,12 +82,13 @@ fun main(args: Array<String>) {
     }
    }
    source.createNewFile()
-   val decompiler = JavaDecompileProxy(flags)
    Files.write(
     source.toPath(),
-    decompiler.decompile(it).toByteArray()
+    decompiler.decompile(it).toByteArray(),
+    StandardOpenOption.WRITE
    )
   }
+// println("Decompiled ${toDecompile.size} files in ${System.currentTimeMillis() - start}ms!")
 }
 
 fun sanitize(input: String): String {
